@@ -348,4 +348,4 @@ app.post('/api/reset', protect, (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Demo server on http://localhost:${PORT} (auth enabled)`));
+app.listen(PORT, () => console.log(`Demo server running on port ${PORT} (auth enabled)`));
