@@ -1,16 +1,100 @@
-# React + Vite
+# Shri Ganesh Electricals
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Mobile-first Electrical Shop Management Web App.
 
-Currently, two official plugins are available:
+**✅ Works on Mobile, Tablet, and Desktop**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+**GitHub:** https://github.com/sundarsundar770844-hue/SHRI-GANESH--ELECTRICAL
 
-## React Compiler
+## Quick Deployment
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**🚀 DEPLOY IN 5 MINUTES:** [QUICK_START.md](QUICK_START.md)
 
-## Expanding the ESLint configuration
+**📖 Detailed Guide:** [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Tech Stack
+
+- **Frontend:** React (Vite) + Tailwind CSS
+- **Backend:** Node.js + Express
+- **Database:** MongoDB Atlas (Mongoose)
+- **Deployment:** Vercel (Frontend + Backend)
+
+## Setup
+
+### 1. Backend
+
+```bash
+cd backend
+npm install
+```
+
+Create `backend/.env` (copy from `backend/.env.example`):
+
+```
+PORT=5000
+MONGO_URI=mongodb+srv://YOUR_USER:YOUR_PASS@cluster.mongodb.net/shri-ganesh?retryWrites=true&w=majority
+# Or for local MongoDB: mongodb://localhost:27017/shri-ganesh
+JWT_SECRET=your-secret-key-change-in-production
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com  # For Google login
+```
+
+Run backend:
+
+```bash
+npm run dev
+```
+
+**Without MongoDB?** Use demo mode (in-memory):
+
+```bash
+npm run demo
+```
+
+### 2. Frontend
+
+```bash
+cd shri-ganesh-frontend
+npm install
+```
+
+Create `shri-ganesh-frontend/.env`:
+
+```
+VITE_API_URL=http://localhost:5000/api
+VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com  # For Google Sign-In
+```
+
+Run frontend:
+
+```bash
+npm run dev
+```
+
+### 3. Google Sign-In (optional)
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a project, enable Google+ API
+3. Create OAuth 2.0 credentials (Web application)
+4. Add `http://localhost:5173` to authorized origins
+5. Copy Client ID to both backend `.env` (GOOGLE_CLIENT_ID) and frontend `.env` (VITE_GOOGLE_CLIENT_ID)
+
+Without Google: Use **Create account** and **Sign in** with email/password.
+
+## Login & Auth
+
+- **Create account** – Sign up with email, name, password
+- **Sign in** – Email + password
+- **Sign in with Google** – When GOOGLE_CLIENT_ID is configured
+- **Forgot password** – Enter email to get reset link (token shown in dev mode)
+- **Reset password** – Enter token from email + new password
+- **Logout** – Tap profile icon (👤) in bottom nav → Logout
+
+**Data per account:** Each user sees only their own products and bills. Different Google/email accounts = different data.
+
+## Features
+
+- Home: Today's sales, low stock alerts
+- Products: Search, category filter, add to bill, remove
+- Bill Centre: Customer name/phone, UPI QR, GST 18%, Save/Pay Later
+- Bill History: View bills, edit Pay Later bills
+- Admin: Add/Edit/Delete products, Update stock, Reset All

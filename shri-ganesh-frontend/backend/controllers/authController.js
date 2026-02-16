@@ -9,17 +9,12 @@ const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET || 'secret
 
 export const signup = async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, username, password, name } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
-    const exists = await User.findOne({ email: email.toLowerCase() });
-    if (exists) return res.status(400).json({ error: 'Email already registered' });
-    
-    // Auto-generate username from email (first part before @)
-    const generatedUsername = email.split('@')[0].toLowerCase();
-    const usernameExists = await User.findOne({ username: generatedUsername });
-    const finalUsername = usernameExists ? `${generatedUsername}${Date.now()}` : generatedUsername;
-    
-    const user = await User.create({ email: email.toLowerCase(), username: finalUsername, password, name: name || '' });
+    if (!username) return res.status(400).json({ error: 'Username required' });
+    const exists = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username: username.toLowerCase() }] });
+    if (exists) return res.status(400).json({ error: 'Email or username already registered' });
+    const user = await User.create({ email: email.toLowerCase(), username: username.toLowerCase(), password, name: name || '' });
     res.status(201).json({
       _id: user._id,
       email: user.email,
@@ -34,15 +29,22 @@ export const signup = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { username, password } = req.body;
-    if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+    const { username, email, password } = req.body;
+    if (!password) return res.status(400).json({ error: 'Password required' });
+    if (!username && !email) return res.status(400).json({ error: 'Username or email required' });
     
-    const user = await User.findOne({ username: username.toLowerCase() });
-    if (!user || !user.password) return res.status(401).json({ error: 'Invalid username or password' });
+    let user;
+    if (username) {
+      user = await User.findOne({ username: username.toLowerCase() });
+      if (!user) return res.status(401).json({ error: 'Username not found' });
+    } else if (email) {
+      user = await User.findOne({ email: email.toLowerCase() });
+      if (!user) return res.status(401).json({ error: 'Email not found' });
+    }
     
+    if (!user || !user.password) return res.status(401).json({ error: 'Invalid credentials' });
     const match = await user.matchPassword(password);
-    if (!match) return res.status(401).json({ error: 'Invalid username or password' });
-    
+    if (!match) return res.status(401).json({ error: 'Invalid password' });
     res.json({
       _id: user._id,
       email: user.email,
