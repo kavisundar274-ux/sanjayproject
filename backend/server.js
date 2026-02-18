@@ -10,17 +10,13 @@ const connectDB = async () => {
 		await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 });
 		console.log('MongoDB connected successfully');
 	} catch (err) {
-		console.log('MongoDB connection error:', err.message);
-		console.log('Running without database - using in-memory storage');
+		console.error('MongoDB connection error:', err.message);
+		process.exit(1);
 	}
 };
 
 const startServer = async () => {
-	try {
-		await connectDB();
-	} catch (err) {
-		console.log('Running without database - using in-memory storage');
-	}
+	await connectDB();
 	const PORT = process.env.PORT || 5000;
 	app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 };
