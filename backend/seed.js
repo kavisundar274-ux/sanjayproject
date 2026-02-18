@@ -17,14 +17,11 @@ async function seed() {
   await connectDB();
   const existing = await User.findOne({ email: 'demo@demo.com' });
   if (existing) {
-    await Product.deleteMany({ userId: existing._id });
+    await User.deleteOne({ _id: existing._id });
+    console.log('Deleted existing demo user');
   }
-  let user = existing;
-  if (!user) {
-    const hashed = await bcrypt.hash('demo123', 10);
-    user = await User.create({ email: 'demo@demo.com', name: 'Demo User', password: hashed });
-    console.log('Created demo user: demo@demo.com / demo123');
-  }
+  const user = await User.create({ email: 'demo@demo.com', username: 'demo', name: 'Demo User', password: 'demo123' });
+  console.log('Created demo user: demo@demo.com / demo123 (username: demo)');
   await Product.insertMany(sampleProducts.map(p => ({ ...p, userId: user._id })));
   console.log('Sample products seeded for demo user');
   process.exit(0);

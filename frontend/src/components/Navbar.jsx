@@ -1,33 +1,34 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink } from 'react-router-dom';
 
 const navItems = [
   { to: '/', icon: '🏠', label: 'Home' },
   { to: '/products', icon: '🛍️', label: 'Products' },
-  { to: '/bill', icon: '🧾', label: 'Bill' },
-  { to: '/bills', icon: '📋', label: 'Bills' },
-  { to: '/reports', icon: '📈', label: 'Reports' },
-  { to: '/admin', icon: '⚙️', label: 'Admin' }
+  { to: '/bill', icon: '🧾', label: 'Bill' }
 ];
 
-export default function Navbar({ user, onLogout }) {
-  const [showMenu, setShowMenu] = useState(false);
-  const base = 'flex flex-col items-center justify-center gap-1 text-xs py-2 min-w-0 flex-1';
-  const active = 'text-[#0D47A1] font-semibold';
-  const inactive = 'text-slate-500';
-
+export default function Navbar({ billItemsCount }) {
   return (
-    <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[94%] max-w-3xl bg-white/95 backdrop-blur rounded-2xl shadow-lg p-1 flex items-center justify-between z-50">
-      {navItems.map(({ to, icon, label }) => (
-        <NavLink
-          key={to}
-          to={to}
-          className={({ isActive }) => `${base} rounded-xl flex-1 ${isActive ? `${active} bg-amber-50` : inactive}`}
-        >
-          <span className="text-lg">{icon}</span>
-          <span className="truncate">{label}</span>
-        </NavLink>
-      ))}
+    <nav className="bg-blue-600 text-white p-4">
+      <div className="container mx-auto flex justify-between items-center">
+        <h1 className="text-xl font-bold">Electrical Shop</h1>
+        <div className="flex space-x-4">
+          {navItems.map(({ to, icon, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) => `flex items-center space-x-1 ${isActive ? 'font-bold' : ''}`}
+            >
+              <span>{icon}</span>
+              <span>{label}</span>
+            </NavLink>
+          ))}
+        </div>
+        <div className="text-sm">Bill Items: {billItemsCount}</div>
+      </div>
+    </nav>
+  );
+}
       <div className="flex items-center gap-4">
         <img src="/ganesh.png.webp" alt="Logo" className="w-8 h-8 rounded-full" />
       </div>

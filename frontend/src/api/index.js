@@ -5,29 +5,10 @@ const API = axios.create({
   headers: { 'Content-Type': 'application/json' }
 });
 
-API.interceptors.request.use((config) => {
-  const stored = localStorage.getItem('shri-ganesh-user');
-  if (stored) {
-    try {
-      const user = JSON.parse(stored);
-      if (user.token) config.headers.Authorization = `Bearer ${user.token}`;
-    } catch {}
-  }
-  return config;
-});
-
-API.interceptors.response.use(
-  (r) => r,
-  (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem('shri-ganesh-user');
-      window.location.href = '/login';
-    }
-    return Promise.reject(err);
-  }
-);
-
 export const getProducts = () => API.get('/products');
+export const addProduct = (product) => API.post('/products', product);
+export const updateProduct = (id, product) => API.put(`/products/${id}`, product);
+export const deleteProduct = (id) => API.delete(`/products/${id}`);
 export const addProduct = (data) => API.post('/products', data);
 export const updateProduct = (id, data) => API.put(`/products/${id}`, data);
 export const deleteProduct = (id) => API.delete(`/products/${id}`);
