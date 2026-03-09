@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-export default function Signup({ onLogin }) {
+export default function Signup() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,7 +42,7 @@ export default function Signup({ onLogin }) {
 
       // Server returns token -> sign in immediately
       if (res.data?.token) {
-        onLogin(res.data, res.data.token);
+        login(res.data, res.data.token);
         navigate('/');
         return;
       }
@@ -49,7 +51,7 @@ export default function Signup({ onLogin }) {
       try {
         const loginRes = await API.post('/auth/login', { username: trimmedUsername, password });
         if (loginRes.data?.token) {
-          onLogin(loginRes.data, loginRes.data.token);
+          login(loginRes.data, loginRes.data.token);
           navigate('/');
           return;
         }

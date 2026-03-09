@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
+import { useAuth } from '../context/AuthContext';
 
 // Whether a real Google Client ID was provided
 const hasGoogleId = import.meta.env.VITE_GOOGLE_CLIENT_ID && !import.meta.env.VITE_GOOGLE_CLIENT_ID.startsWith('your-') && import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'dummy.apps.googleusercontent.com';
 // Only allow the demo / client-side fallback during local development
 const allowDemo = import.meta.env.DEV;
 
-export default function Login({ onLogin }) {
+export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -49,7 +51,7 @@ export default function Login({ onLogin }) {
       const API = (await import('../api')).default;
       const res = await API.post('/auth/google', { access_token: googlePending.access_token });
       if (res.data?.token) {
-        onLogin(res.data, res.data.token);
+        login(res.data, res.data.token);
         navigate('/');
       } else {
         setError('Google sign-in failed');
@@ -88,7 +90,7 @@ export default function Login({ onLogin }) {
     setLoading(true);
     try {
       const res = await (await import('../api')).default.post('/auth/login', { username, password });
-      onLogin(res.data, res.data.token);
+      login(res.data, res.data.token);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed - username or credentials do not match');

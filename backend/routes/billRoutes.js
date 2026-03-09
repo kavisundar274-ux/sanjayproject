@@ -3,7 +3,7 @@ import { createBill, getBills, getBillById, getDailySales, getMonthlyReport, sav
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
-router.use(protect);
+// router.use(protect);
 router.get('/', getBills);
 router.get('/daily', getDailySales);
 router.get('/monthly', getMonthlyReport);

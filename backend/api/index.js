@@ -3,6 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import productRoutes from '../routes/productRoutes.js';
+import authRoutes from '../routes/authRoutes.js';
+import billRoutes from '../routes/billRoutes.js';
+import resetRoutes from '../routes/resetRoutes.js';
 
 const app = express();
 
@@ -22,6 +25,9 @@ app.get('/', (req, res) => res.json({ message: 'API ok' }));
 
 // Mount routes
 app.use('/api/products', productRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/bills', billRoutes);
+app.use('/api/reset', resetRoutes);
 
 // 404
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

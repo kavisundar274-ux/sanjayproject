@@ -5,10 +5,16 @@ const API = axios.create({
   headers: { 'Content-Type': 'application/json' }
 });
 
+// Add token to requests if available
+// API.interceptors.request.use((config) => {
+//   const user = JSON.parse(localStorage.getItem('shri-ganesh-user') || 'null');
+//   if (user?.token) {
+//     config.headers.Authorization = `Bearer ${user.token}`;
+//   }
+//   return config;
+// });
+
 export const getProducts = () => API.get('/products');
-export const addProduct = (product) => API.post('/products', product);
-export const updateProduct = (id, product) => API.put(`/products/${id}`, product);
-export const deleteProduct = (id) => API.delete(`/products/${id}`);
 export const addProduct = (data) => API.post('/products', data);
 export const updateProduct = (id, data) => API.put(`/products/${id}`, data);
 export const deleteProduct = (id) => API.delete(`/products/${id}`);

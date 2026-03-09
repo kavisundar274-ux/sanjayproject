@@ -48,7 +48,7 @@ export default function BillHistory({ sales = [], onRefresh }) {
                 <div>
                   <div className="font-semibold flex items-center gap-2">
                     Bill #{bill.billNumber}
-                    {bill.paymentStatus === 'pending' && <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Pay Later</span>}
+                    {bill.paymentStatus === 'pending' && <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Pending</span>}
                   </div>
                   <div className="text-sm text-slate-500">{bill.customerName}</div>
                   {bill.phone && <div className="text-xs text-slate-400">{bill.phone}</div>}
@@ -66,10 +66,11 @@ export default function BillHistory({ sales = [], onRefresh }) {
         </div>
       ) : (
         <div className="text-center py-12 text-slate-500 bg-white rounded-xl">
-          No bills{dateParam ? ' for selected date.' : ' yet. Create one from Bill Centre.'}
+          No bills{dateParam ? ' for selected date.' : ' yet. Create one from Bill page.'}
           <Link to="/bill" className="block mt-2 text-[#0D47A1] font-medium">Go to Bill</Link>
         </div>
       )}
     </div>
   );
 }
+

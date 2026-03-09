@@ -10,26 +10,58 @@ const generateBillNumber = async (userId) => {
 export const createBill = async (req, res) => {
   try {
     const { customerName, phone, items, totalAmount, gst, grandTotal, paymentStatus } = req.body;
+    
+    // Validation
+    if (!customerName || !customerName.trim()) {
+      return res.status(400).json({ error: 'Customer name is required' });
+    }
+    if (!items || items.length === 0) {
+      return res.status(400).json({ error: 'At least one item is required' });
+    }
+    if (totalAmount === undefined || totalAmount === null || isNaN(totalAmount)) {
+      return res.status(400).json({ error: 'Valid total amount is required' });
+    }
+    if (grandTotal === undefined || grandTotal === null || isNaN(grandTotal)) {
+      return res.status(400).json({ error: 'Valid grand total is required' });
+    }
+
+    console.log('Creating bill with data:', req.body);
+    const userId = req.user?._id || 'admin';
     const isPayLater = paymentStatus === 'pending';
-    const billNumber = await generateBillNumber(req.user._id);
-    const billItems = items || [];
+    const billNumber = await generateBillNumber(userId);
+    
+    // Process items - ensure they have required fields
+    const billItems = items.map(it => ({
+      productId: it.productId || it._id || '',
+      name: it.name || '',
+      brand: it.brand || '',
+      price: Number(it.price) || 0,
+      qty: Number(it.qty) || 1,
+      amount: Number(it.amount) || 0
+    }));
+
+    // Update stock if payment is confirmed (not pending)
     if (!isPayLater) {
       for (const it of billItems) {
-        if (it.productId) {
-          const p = await Product.findById(it.productId);
-          if (p) {
-            const qty = it.qty || 1;
-            p.stock = Math.max(0, (p.stock || 0) - qty);
-            p.totalSold = (p.totalSold || 0) + qty;
-            await p.save();
+        if (it.productId && it.productId.match(/^[0-9a-fA-F]{24}$/)) { // Valid MongoDB ObjectId
+          try {
+            const p = await Product.findById(it.productId);
+            if (p) {
+              p.stock = Math.max(0, (p.stock || 0) - it.qty);
+              p.totalSold = (p.totalSold || 0) + it.qty;
+              await p.save();
+            }
+          } catch (err) {
+            console.warn(`Could not update stock for product ${it.productId}:`, err.message);
           }
         }
       }
     }
+
     const bill = new Bill({
-      userId: req.user._id,
+      userId,
       billNumber,
-      customerName,
+      customerName: customerName.trim(),
       phone: phone || '',
       items: billItems,
       totalAmount: Number(totalAmount),
@@ -37,16 +69,21 @@ export const createBill = async (req, res) => {
       grandTotal: Number(grandTotal),
       paymentStatus: isPayLater ? 'pending' : 'paid'
     });
+    
+    console.log('Bill object before save:', bill);
     await bill.save();
+    console.log('Bill saved successfully:', bill._id);
     res.status(201).json(bill);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error creating bill:', error);
+    res.status(500).json({ error: error.message || 'Failed to create bill' });
   }
 };
 
 export const getBills = async (req, res) => {
   try {
-    const bills = await Bill.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    const userId = req.user?._id || 'admin';
+    const bills = await Bill.find({ userId }).sort({ createdAt: -1 });
     res.json(bills);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -55,7 +92,8 @@ export const getBills = async (req, res) => {
 
 export const getBillById = async (req, res) => {
   try {
-    const bill = await Bill.findOne({ _id: req.params.id, userId: req.user._id });
+    const userId = req.user?._id || 'admin';
+    const bill = await Bill.findOne({ _id: req.params.id, userId });
     if (!bill) return res.status(404).json({ error: 'Bill not found' });
     res.json(bill);
   } catch (error) {
@@ -65,12 +103,30 @@ export const getBillById = async (req, res) => {
 
 export const getDailySales = async (req, res) => {
   try {
+    const userId = req.user?._id || 'admin';
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const bills = await Bill.find({ userId: req.user._id, createdAt: { $gte: today } });
-    const total = bills.reduce((sum, b) => sum + b.grandTotal, 0);
-    res.json({ count: bills.length, total, bills });
+    const bills = await Bill.find({ userId, createdAt: { $gte: today } });
+    const overdueCutoff = new Date(Date.now() - (5 * 24 * 60 * 60 * 1000));
+    const overduePendingBills = await Bill.find({
+      userId,
+      paymentStatus: 'pending',
+      createdAt: { $lte: overdueCutoff }
+    }).sort({ createdAt: 1 });
+    const totalRevenue = bills.reduce((sum, b) => sum + b.grandTotal, 0);
+    const totalBills = bills.length;
+    const recentBills = bills.sort((a, b) => b.createdAt - a.createdAt).slice(0, 10);
+    res.json({
+      totalRevenue,
+      totalBills,
+      recentBills,
+      count: bills.length,
+      bills,
+      overduePendingCount: overduePendingBills.length,
+      overduePendingBills
+    });
   } catch (error) {
+    console.error('Error in getDailySales:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -86,13 +142,18 @@ export const getMonthlyReport = async (req, res) => {
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 1);
 
-    // find paid bills in the month
-    const bills = await Bill.find({ userId: req.user._id, createdAt: { $gte: start, $lt: end }, paymentStatus: 'paid' });
-    const totalRevenue = bills.reduce((s, b) => s + (b.grandTotal || 0), 0);
-    const totalBills = bills.length;
+    const userId = req.user?._id || 'admin';
+
+    // paid bills are used for revenue metrics
+    const paidBills = await Bill.find({ userId, createdAt: { $gte: start, $lt: end }, paymentStatus: 'paid' });
+    // all bills are used for recent list and pending discoverability
+    const monthBills = await Bill.find({ userId, createdAt: { $gte: start, $lt: end } });
+
+    const totalRevenue = paidBills.reduce((s, b) => s + (b.grandTotal || 0), 0);
+    const totalBills = paidBills.length;
 
     // aggregate product-wise totals from bill items
-    const items = bills.flatMap(b => (b.items || []).map(i => ({ productId: i.productId ? String(i.productId) : null, name: i.name || 'Unknown', qty: i.qty || 0, revenue: i.total || ((i.price || 0) * (i.qty || 0)), createdAt: b.createdAt })));
+    const items = paidBills.flatMap(b => (b.items || []).map(i => ({ productId: i.productId ? String(i.productId) : null, name: i.name || 'Unknown', qty: i.qty || 0, revenue: i.total || ((i.price || 0) * (i.qty || 0)), createdAt: b.createdAt })));
 
     const grouped = items.reduce((acc, it) => {
       const key = it.productId || it.name;
@@ -107,19 +168,22 @@ export const getMonthlyReport = async (req, res) => {
     // build daily breakdown
     const daysInMonth = new Date(year, month, 0).getDate();
     const daily = Array.from({ length: daysInMonth }, (_, i) => ({ day: i + 1, totalRevenue: 0, totalBills: 0 }));
-    for (const b of bills) {
+    for (const b of paidBills) {
       const d = new Date(b.createdAt).getDate();
       daily[d - 1].totalRevenue += (b.grandTotal || 0);
       daily[d - 1].totalBills += 1;
     }
 
-    const recentBills = (bills || [])
+    const recentBills = (monthBills || [])
       .slice()
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 8)
+      .slice(0, 20)
       .map(b => ({ billId: b._id, billNumber: b.billNumber, customerName: b.customerName || '', createdAt: b.createdAt, grandTotal: b.grandTotal, paymentStatus: b.paymentStatus }));
 
-    res.json({ month, year, totalRevenue, totalBills, products, daily, recentBills });
+    const overdueCutoff = new Date(Date.now() - (5 * 24 * 60 * 60 * 1000));
+    const overduePendingCount = monthBills.filter(b => b.paymentStatus === 'pending' && new Date(b.createdAt) <= overdueCutoff).length;
+
+    res.json({ month, year, totalRevenue, totalBills, products, daily, recentBills, overduePendingCount });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
